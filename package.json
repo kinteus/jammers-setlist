@@ -1,0 +1,40 @@
+{
+  "name": "@kinteus/jammers-setlist",
+  "version": "1.0.0",
+  "description": "Deterministic history-weighted song selection for The Jammers",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs/ALGORITHM.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kinteus/jammers-setlist.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kinteus/jammers-setlist/issues"
+  },
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "npm run build && npm test && node tests/package-smoke.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "~3.2.4"
+  }
+}
