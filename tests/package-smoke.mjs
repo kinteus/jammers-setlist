@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const temp = mkdtempSync(join(tmpdir(), "jammers-setlist-"));
@@ -21,5 +21,17 @@ try {
     assert.equal(result.selected[0].section, 'MAIN');
     assert.deepEqual(result.rankedTrackIds, ['t1']);
     assert.doesNotThrow(() => JSON.stringify(result));
+    const { getBoardKey, getSelectableSongs, isTrackReady, solveMaxParticipants } = await import('@kinteus/jammers-setlist');
+    const seats = [{ status: 'CLAIMED', userId: 'u1', isOptional: false }, { status: 'OPEN', userId: null, isOptional: true }];
+    assert.equal(isTrackReady(seats, 1), true);
+    const songs = getSelectableSongs([{ id: 't1', songId: 's1', createdAt: new Date('2026-01-01'), seats }], 1, []);
+    assert.match(getBoardKey(songs), /^[0-9a-f]{16}$/);
+    const solution = await solveMaxParticipants({ songs, slots: 1 });
+    assert.deepEqual(solution.trackIds, ['t1']);
   `], { cwd: temp, stdio: "inherit" });
+  // Screens import the package too, so the shipped code must not need Node-only modules.
+  const dist = join(temp, "node_modules", "@kinteus", "jammers-setlist", "dist");
+  for (const file of readdirSync(dist).filter((name) => name.endsWith(".js"))) {
+    assert.doesNotMatch(readFileSync(join(dist, file), "utf8"), /from\s+["']node:|require\(/, `${file} imports a Node-only module`);
+  }
 } finally { rmSync(temp, { recursive: true, force: true }); }

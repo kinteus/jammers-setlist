@@ -1,7 +1,7 @@
 {
   "name": "@kinteus/jammers-setlist",
-  "version": "1.0.0",
-  "description": "Deterministic history-weighted song selection for The Jammers",
+  "version": "1.1.0",
+  "description": "Deterministic song selection for The Jammers: participant-maximizing and history-weighted",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

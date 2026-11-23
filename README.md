@@ -1,6 +1,6 @@
 # Jammers setlist
 
-A standalone TypeScript/JavaScript package for deterministic history-weighted song selection. No runtime dependencies, Prisma, database access, credentials, or network calls. Requires Node.js 22 or newer.
+A standalone TypeScript/JavaScript package for deterministic setlist selection: the current participant-maximizing selection and the earlier history-weighted ranking. No runtime dependencies, Prisma, database access, credentials, or network calls. The participant-maximizing selection and its rules use no Node-only modules, so they also run in browsers. Requires Node.js 22 or newer on the server.
 
 ## Install
 
@@ -11,6 +11,44 @@ npm install --save-exact 'https://api.github.com/repos/kinteus/jammers-setlist/t
 ```
 
 ## Use
+
+### Current selection: most different participants
+
+```js
+import {
+  buildSeatsSinceLastSetlist,
+  getBoardKey,
+  getSelectableSongs,
+  isTrackReady,
+  solveMaxParticipants,
+} from '@kinteus/jammers-setlist';
+
+const seats = [
+  { status: 'CLAIMED', userId: 'musician-1', isOptional: false },
+  { status: 'CLAIMED', userId: 'musician-2', isOptional: false },
+  { status: 'OPEN', userId: null, isOptional: true },
+];
+const tracks = [{ id: 'track-1', songId: 'song-1', createdAt: new Date('2026-01-01'), seats }];
+// Newest played gig first; songs from the main sets of the 2 newest are skipped.
+const history = [{ songIds: ['song-9'] }, { songIds: ['song-8'] }];
+
+isTrackReady(seats, 2); // true: the only open seat is optional
+const songs = getSelectableSongs(tracks, 2, history); // [{ id: 'track-1', people: ['musician-1', 'musician-2'] }]
+const boardKey = getBoardKey(songs); // 16 hex characters; compare later to spot board changes
+const solution = await solveMaxParticipants({ songs, slots: 12, required: ['musician-2'] });
+if (!solution) throw new Error('No main set includes everyone required');
+console.log(solution.trackIds, solution.participantIds, solution.exhaustive);
+```
+
+`solveMaxParticipants` returns `null` when no set includes every `required` person; otherwise `{ trackIds, participantIds, exhaustive, checkedCount, durationMs }`. It yields to the event loop while it works and stops at `timeLimitMs` (default `SELECTION_TIME_LIMIT_MS`, 5 s) with the best set found and `exhaustive: false`.
+
+`buildSeatsSinceLastSetlist(gigs)` takes played gigs (`startsAt`, `minParticipantsPerTrack`, `mainUserIds`, `tracks` as above) and returns a `Map` of person ID to `{ ready, incomplete, lastSetlistAt }`.
+
+The caller maps its own records to these plain tracks, checks the per-person song limit (`findParticipantsExceedingTrackLimit`), applies any extra exclusions of its own, and stores results.
+
+Exports: `solveMaxParticipants`, `SELECTION_TIME_LIMIT_MS`, `getSelectableSongs`, `getBoardKey`, `buildSeatsSinceLastSetlist`, `isTrackReady`, `getRepeatSongIds`, `REPEAT_GIG_COUNT`, and the types `SelectionSong`, `SelectionSolution`, `SolveMaxParticipantsInput`, `SelectionBoardTrack`, `SelectionSeat`, `PlayedGig`, `SeatsSinceLastSetlist`.
+
+### History-weighted ranking
 
 ```js
 import {
